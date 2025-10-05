@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>崔悦的官方网站</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <header>
+        <nav class="main-menu">
+            <ul>
+                <li th:each="item : ${menuItems}">
+                    <a th:href="@{${item.url}}" th:text="${item.name}"></a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="blog-layout">
+        <aside class="blog-sidebar">
+            <h2>所有文章</h2>
+            <ul>
+                <li th:each="blog : ${allBlogs}">
+                    <span>
+                        <time th:datetime="${blog.date}" th:text="${blog.date}"/>
+                    </span>
+                    <a th:href="@{'/blogs/' + ${blog.id}}" th:class="${selectedBlog.id == blog.id} ? 'active' : ''" th:text="${blog.title}"></a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="blog-content">
+            <article th:if="${selectedBlog}">
+                <h1 th:text="${selectedBlog.title}"></h1>
+                <p class="blog-date" th:text="${selectedBlog.date}"></p>
+                <div id="markdown-content" th:utext="${selectedBlog.content}"></div>
+            </article>
+            <div th:unless="${selectedBlog}" class="no-blog">
+                <p>没有找到博客内容</p>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    // 解析Markdown内容
+    document.addEventListener('DOMContentLoaded', function() {
+        const markdownContent = document.getElementById('markdown-content');
+        if (markdownContent) {
+            const html = marked.parse(markdownContent.textContent);
+            markdownContent.innerHTML = html;
+        }
+    });
+</script>
+</body>
+</html>

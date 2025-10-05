@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang=en xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>崔悦的官方网站</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <header>
+        <nav class="main-menu">
+            <ul>
+                <li th:each="item : ${menuItems}">
+                    <a th:href="@{${item.url}}" th:text="${item.name}"></a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="latest-blogs">
+            <h2>最新博客</h2>
+            <ul>
+                <li th:each="blog : ${latestBlogs}">
+                    <a th:href="@{'/blogs/' + ${blog.id}}" th:text="${blog.id}"></a>
+                </li>
+            </ul>
+        </section>
+    </main>
+</div>
+</body>
+</html>

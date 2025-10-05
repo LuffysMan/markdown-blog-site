@@ -1,0 +1,16 @@
+spring:
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    encoding: UTF-8 #编码
+    suffix: .html #模板后缀
+    mode: HTML #模板
+
+blogs:
+  baseDir: D:\Download\blogs
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: D:\Download\logs\app.log
