@@ -7,8 +7,7 @@ COPY bin ./bin
 COPY target ./target
 
 # 执行安装动作
-RUN echo "$(pwd)"
-RUN /tmp/work/bin/install.sh
+RUN /tmp/work/bin/install.sh && rm -rf /tmp/work
 
 # 指定后续命令的用户和用户组
 USER tomcat:xiaocui
@@ -17,4 +16,4 @@ USER tomcat:xiaocui
 EXPOSE 8080
 
 # 启动应用
-ENTRYPOINT ["sh", "start.sh"]
+ENTRYPOINT ["bash", "/opt/xiaocui/blogs/bin/start.sh"]

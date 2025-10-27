@@ -3,7 +3,7 @@
 ####################################################################################
 # 做安装工作: 创建用户, 创建目录, 拷贝jar包到程序安装位置等
 ####################################################################################
-current_dir=$(dirname "$0")
+current_dir=$(cd "$(dirname "$0")" || exit; pwd)
 
 # CONSTANTS
 PACKAGE_DIR=$(dirname "${current_dir}")
@@ -11,13 +11,8 @@ INSTALL_DIR="/opt/xiaocui/blogs"
 
 # 创建用户,用户组
 function create_user() {
-    groupadd -g 60000 tomcat
+    groupadd -g 60000 xiaocui
     useradd -s /usr/sbin/nologin -m -u 60001 tomcat -g xiaocui
-}
-
-function delete_user() {
-    userdel -r tomcat
-    groupdel xiaocui
 }
 
 function create_basic_dir() {
@@ -25,13 +20,6 @@ function create_basic_dir() {
     mkdir -p "${INSTALL_DIR}"/conf
     mkdir -p "${INSTALL_DIR}"/data
     mkdir -p "${INSTALL_DIR}"/log
-}
-
-function delete_basic_dir() {
-    rm -rf "${INSTALL_DIR:?}"/bin
-    rm -rf "${INSTALL_DIR}"/conf
-    rm -rf "${INSTALL_DIR}"/data
-    rm -rf "${INSTALL_DIR}"/log
 }
 
 function copy_program_files() {
@@ -46,15 +34,11 @@ function set_permission() {
 
 }
 
-function uninstall() {
-    delete_basic_dir
-    delete_user
-}
-
 function main() {
-    uninstall
     create_user
     create_basic_dir
     copy_program_files
     set_permission
 }
+
+main

@@ -32,7 +32,7 @@ public class BlogController {
         List<BlogMetadata> allBlogs = null;
         try {
             allBlogs = blogService.getAllBlogs();
-            selectedBlog = allBlogs.isEmpty() ? new BlogMetadata() : allBlogs.getFirst();
+            selectedBlog = allBlogs.isEmpty() ? new BlogMetadata() : allBlogs.get(0);
 
         } catch (IOException e) {
             e.printStackTrace();

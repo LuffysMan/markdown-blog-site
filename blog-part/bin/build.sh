@@ -1,1 +1,0 @@
-DOCKER_BUILDKIT=0 docker build --no-cache -t xiaocui/blogs:v0.1 .
