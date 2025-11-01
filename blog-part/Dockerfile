@@ -1,10 +1,8 @@
 FROM eclipse-temurin:21-jre-jammy
 
-WORKDIR /tmp/work
-
 # 拷贝安装资源
-COPY bin ./bin
-COPY target ./target
+COPY bin /tmp/work/bin
+COPY target /tmp/work/target
 
 # 执行安装动作
 RUN /tmp/work/bin/install.sh && rm -rf /tmp/work
