@@ -1,4 +1,4 @@
-package com.cuiyue.media.service;
+package com.cuiyue.media.service.impl;
 
 import com.cuiyue.media.pojo.MenuObj;
 import org.springframework.stereotype.Service;

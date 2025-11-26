@@ -1,23 +1,22 @@
 package com.cuiyue.media.controller;
 
-import com.cuiyue.media.pojo.BlogMetadata;
+import com.cuiyue.media.pojo.BlogMetaData;
 import com.cuiyue.media.pojo.MenuObj;
-import com.cuiyue.media.service.BlogService;
-import com.cuiyue.media.service.IndexService;
+import com.cuiyue.media.service.impl.BlogServiceImpl;
+import com.cuiyue.media.service.impl.IndexService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.io.IOException;
 import java.util.List;
 
 @Controller
 @RequestMapping("/")
 public class IndexController {
     @Autowired
-    private BlogService blogService;
+    private BlogServiceImpl blogServiceImpl;
 
     @Autowired
     private IndexService indexService;
@@ -32,13 +31,8 @@ public class IndexController {
         List<MenuObj> menuItems = indexService.getMenuItems();
         model.addAttribute("menuItems", menuItems);
 
-        List<BlogMetadata> latestBlogs = null;
-        try {
-            latestBlogs = blogService.getLatestBlogs(10);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+        List<BlogMetaData> latestBlogs = null;
+        latestBlogs = blogServiceImpl.getLatestBlogs(10);
         model.addAttribute("latestBlogs", latestBlogs);
         return "index";
     }

@@ -1,9 +1,9 @@
 package com.cuiyue.media.controller;
 
-import com.cuiyue.media.pojo.BlogMetadata;
+import com.cuiyue.media.pojo.BlogMetaData;
 import com.cuiyue.media.pojo.MenuObj;
-import com.cuiyue.media.service.BlogService;
-import com.cuiyue.media.service.IndexService;
+import com.cuiyue.media.service.impl.BlogServiceImpl;
+import com.cuiyue.media.service.impl.IndexService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,15 +11,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 @Controller
 @RequestMapping("/blogs")
 public class BlogController {
     @Autowired
-    private BlogService blogService;
+    private BlogServiceImpl blogServiceImpl;
 
     @Autowired
     private IndexService indexService;
@@ -28,15 +26,10 @@ public class BlogController {
     public String blogsPage(Model model) {
         List<MenuObj> menuItems = indexService.getMenuItems();
 
-        BlogMetadata selectedBlog = new BlogMetadata();
-        List<BlogMetadata> allBlogs = null;
-        try {
-            allBlogs = blogService.getAllBlogs();
-            selectedBlog = allBlogs.isEmpty() ? new BlogMetadata() : allBlogs.get(0);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        BlogMetaData selectedBlog = new BlogMetaData();
+        List<BlogMetaData> allBlogs = null;
+        allBlogs = blogServiceImpl.getAllBlogs();
+        selectedBlog = allBlogs.isEmpty() ? new BlogMetaData() : allBlogs.get(0);
 
         model.addAttribute("menuItems", menuItems);
         model.addAttribute("allBlogs", allBlogs);
@@ -48,17 +41,12 @@ public class BlogController {
     public String getBlog(@PathVariable String id, Model model) {
         List<MenuObj> menuItems = indexService.getMenuItems();
 
-        BlogMetadata blog = null;
-        List<BlogMetadata> allBlogs = null;
-        try {
-            blog = blogService.getBlog(id);
-            allBlogs = blogService.getAllBlogs();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        BlogMetaData blog = null;
+        List<BlogMetaData> allBlogs = null;
+        blog = blogServiceImpl.getBlogByName(id);
+        allBlogs = blogServiceImpl.getAllBlogs();
         model.addAttribute("menuItems", menuItems);
-        model.addAttribute("selectedBlog", blog == null ? new BlogMetadata() : blog);
+        model.addAttribute("selectedBlog", blog == null ? new BlogMetaData() : blog);
         model.addAttribute("allBlogs", allBlogs);
         return "blogs";
     }

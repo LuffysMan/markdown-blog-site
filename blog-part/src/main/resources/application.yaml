@@ -7,10 +7,10 @@ spring:
     mode: HTML #模板
 
 blogs:
-  baseDir: D:\Download\blogs
+  baseDir: ${BLOG_BASE_DIR}
 
 logging:
   level:
     root: INFO
   file:
-    name: D:\Download\logs\app.log
+    name: ${LOG_FILE_PATH}

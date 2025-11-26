@@ -2,19 +2,20 @@ package com.cuiyue.media.pojo;
 
 import java.time.LocalDate;
 
-public class BlogMetadata {
+public class BlogMetaData {
     private String id;      // 例如 "2025-9-7-my-first-blog"
     private String title;   // my first blog
     private LocalDate date; // 2025-09-07
     private String content; // index.md 内容
 
-    public BlogMetadata() {
+    public BlogMetaData() {
         this.id = "";
-        this.title = "暂无博客";
+        this.title = "no blog";
         this.date = LocalDate.now();
-        this.content = "# 暂无内容";
+        this.content = "# no content";
     }
-    public BlogMetadata(String id, String title, LocalDate date, String content) {
+
+    public BlogMetaData(String id, String title, LocalDate date, String content) {
         this.id = id;
         this.title = title;
         this.date = date;
