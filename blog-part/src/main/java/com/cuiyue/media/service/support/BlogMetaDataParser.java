@@ -16,10 +16,14 @@ public class BlogMetaDataParser {
     private static final Logger log = LoggerFactory.getLogger(BlogMetaDataParser.class);
 
     public BlogMetaData parseBlogMetaData(Path blogDir) {
+        if (blogDir == null) {
+            log.error("parameter is null: blogDir");
+            return null;
+        }
         String folderName = blogDir.getFileName().toString();
         String[] parts = folderName.split("-", 4); //  [2025-9-7-my-first-blog] --> [2025, 9, 7, my-first-blog]
         if (parts.length < 4) {
-            log.warn("Invalid blog folder name format: {}", folderName);
+            log.error("Invalid blog folder name format: {}", folderName);
             return null;
         }
 

@@ -35,7 +35,7 @@ public class BlogFileSystemReader {
         Path blogDir = Paths.get(baseDirectory, blogName);
         if (!Files.isDirectory(blogDir)) {
             log.error("blog dir not exists: {}", blogDir);
-            throw new BlogFileIOException("blog dir not exists");
+            return null;
         }
         return blogDir;
     }

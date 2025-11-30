@@ -53,6 +53,15 @@ class BlogServiceImplTest {
     }
 
     @Test
+    void shouldReturnNullWhenGetBlogByNameGivenNonExistBlogID() {
+        // act
+        BlogMetaData blogMetaData = blogServiceImpl.getBlogByName("non-exist-blog-id");
+
+        // assert
+        assertThat(blogMetaData).isNull();
+    }
+
+    @Test
     void shouldGetAllBlogs() {
         // arrange
         String blogTile1 = "blog-1";
