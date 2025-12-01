@@ -33,7 +33,7 @@ class BlogServiceImplTest {
 
 
     @Test
-    void shouldGetBlogByName() {
+    void shouldReturnBlogWhenGetBlogByName() {
         // arrange
         String blogTile1 = "blog-1";
         String blogId1 = "2025-9-17-" + blogTile1;
@@ -62,7 +62,7 @@ class BlogServiceImplTest {
     }
 
     @Test
-    void shouldGetAllBlogs() {
+    void shouldReturnAllBlogsWhenGetAllBlogs() {
         // arrange
         String blogTile1 = "blog-1";
         String blogTile2 = "blog-2";
@@ -87,6 +87,27 @@ class BlogServiceImplTest {
         // assert
         assertThat(blogs).hasSize(2);
         assertThat(blogs).containsExactly(blogMetaData2, blogMetaData1);
+    }
+
+    @Test
+    void shouldReturnEmptyBlogListWhenGetAllBlogsGivenIncorrectBlogData() {
+        // arrange
+        String blogId1 = "blog-1";
+        String blogId2 = "blog-2";
+        LocalDate blogDate1 = LocalDate.of(2025, 9, 17);
+        LocalDate blogDate2 = LocalDate.of(2025, 9, 18);
+        String blogContent1 = "content1";
+        String blogContent2 = "content2";
+
+        Path blogDir1 = Paths.get(blogDirStub, blogId1);
+        Path blogDir2 = Paths.get(blogDirStub, blogId2);
+        when(blogFileSystemReader.getAllBlogDirectories()).thenReturn(List.of(blogDir1, blogDir2));
+
+        // act
+        List<BlogMetaData> blogs = blogServiceImpl.getAllBlogs();
+
+        // assert
+        assertThat(blogs).hasSize(0);
     }
 
     @Test
