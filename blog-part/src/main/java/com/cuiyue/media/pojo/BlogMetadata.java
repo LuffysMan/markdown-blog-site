@@ -10,9 +10,9 @@ public class BlogMetaData {
 
     public BlogMetaData() {
         this.id = "";
-        this.title = "no blog";
+        this.title = "empty";
         this.date = LocalDate.now();
-        this.content = "# no content";
+        this.content = "# empty";
     }
 
     public BlogMetaData(String id, String title, LocalDate date, String content) {
@@ -22,7 +22,6 @@ public class BlogMetaData {
         this.content = content;
     }
 
-    // getters / setters
 
     public String getId() {
         return id;

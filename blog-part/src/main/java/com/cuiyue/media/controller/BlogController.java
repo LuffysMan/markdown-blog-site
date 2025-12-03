@@ -29,7 +29,7 @@ public class BlogController {
         BlogMetaData selectedBlog = new BlogMetaData();
         List<BlogMetaData> allBlogs = null;
         allBlogs = blogServiceImpl.getAllBlogs();
-        selectedBlog = allBlogs.isEmpty() ? new BlogMetaData() : allBlogs.get(0);
+        selectedBlog = allBlogs.isEmpty() ? new BlogMetaData() : allBlogs.getFirst();
 
         model.addAttribute("menuItems", menuItems);
         model.addAttribute("allBlogs", allBlogs);
