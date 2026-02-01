@@ -3,7 +3,7 @@ package com.cuiyue.media.controller;
 import com.cuiyue.media.pojo.BlogMetaData;
 import com.cuiyue.media.pojo.MenuObj;
 import com.cuiyue.media.service.impl.BlogServiceImpl;
-import com.cuiyue.media.service.impl.IndexService;
+import com.cuiyue.media.service.IndexService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,13 +23,11 @@ public class BlogController {
     private IndexService indexService;
 
     @GetMapping("")
-    public String blogsPage(Model model) {
+    public String showBlogs(Model model) {
         List<MenuObj> menuItems = indexService.getMenuItems();
 
-        BlogMetaData selectedBlog = new BlogMetaData();
-        List<BlogMetaData> allBlogs = null;
-        allBlogs = blogServiceImpl.getAllBlogs();
-        selectedBlog = allBlogs.isEmpty() ? new BlogMetaData() : allBlogs.getFirst();
+        List<BlogMetaData> allBlogs = blogServiceImpl.getAllBlogs();
+        BlogMetaData selectedBlog = allBlogs.isEmpty() ? new BlogMetaData() : allBlogs.getFirst();
 
         model.addAttribute("menuItems", menuItems);
         model.addAttribute("allBlogs", allBlogs);
@@ -38,7 +36,7 @@ public class BlogController {
     }
 
     @GetMapping("/{id}")
-    public String getBlog(@PathVariable String id, Model model) {
+    public String showBlog(@PathVariable String id, Model model) {
         List<MenuObj> menuItems = indexService.getMenuItems();
 
         BlogMetaData blog = null;
