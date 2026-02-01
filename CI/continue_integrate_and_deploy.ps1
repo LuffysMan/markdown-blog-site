@@ -19,7 +19,7 @@ $DEPLOY_PATH = Join-Path $PROJECT_PATH "xiaocui"
 $IMAGE_BUILD_PATH = Join-Path "${BUILD_DIR}" app.tar
 $IMAGE_DEPLOY_PATH = Join-Path "${DEPLOY_PATH}" app.tar
 
-## 运行配置
+## 运行配置(容器内)
 $DATA_DIR = "/opt/xiaocui/blogs/data"
 $LOG_DIR = "/opt/xiaocui/blogs/logs"
 $APP_NAME = "xcblog"
