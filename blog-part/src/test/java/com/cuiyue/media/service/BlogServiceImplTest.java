@@ -36,7 +36,7 @@ class BlogServiceImplTest {
     void shouldReturnBlogWhenGetBlogByName() {
         // arrange
         String blogTile1 = "blog-1";
-        String blogId1 = "2025-9-17-" + blogTile1;
+        String blogId1 = "2025-9-17-" + blogTile1;      // 2025-9-17-blog-1
         LocalDate blogDate1 = LocalDate.of(2025, 9, 17);
         String blogContent1 = "content1";
 
@@ -92,12 +92,8 @@ class BlogServiceImplTest {
     @Test
     void shouldReturnEmptyBlogListWhenGetAllBlogsGivenIncorrectBlogData() {
         // arrange
-        String blogId1 = "blog-1";
+        String blogId1 = "blog-1";      // 正确的名称应该类似: 2025-9-17-my-first-blog
         String blogId2 = "blog-2";
-        LocalDate blogDate1 = LocalDate.of(2025, 9, 17);
-        LocalDate blogDate2 = LocalDate.of(2025, 9, 18);
-        String blogContent1 = "content1";
-        String blogContent2 = "content2";
 
         Path blogDir1 = Paths.get(blogDirStub, blogId1);
         Path blogDir2 = Paths.get(blogDirStub, blogId2);
