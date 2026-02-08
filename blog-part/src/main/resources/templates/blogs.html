@@ -26,7 +26,7 @@
                     <span>
                         <time th:datetime="${blog.date}" th:text="${blog.date}"/>
                     </span>
-                    <a th:href="@{'/blogs/' + ${blog.id}}" th:class="${selectedBlog.id == blog.id} ? 'active' : ''" th:text="${blog.title}"></a>
+                    <a th:href="@{'/blogs/' + ${blog.id} + '/'}" th:class="${selectedBlog.id == blog.id} ? 'active' : ''" th:text="${blog.title}"></a>
                 </li>
             </ul>
         </aside>

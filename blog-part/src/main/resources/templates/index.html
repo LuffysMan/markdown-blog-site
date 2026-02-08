@@ -22,7 +22,7 @@
             <h2>最新博客</h2>
             <ul>
                 <li th:each="blog : ${latestBlogs}">
-                    <a th:href="@{'/blogs/' + ${blog.id}}" th:text="${blog.id}"></a>
+                    <a th:href="@{'/blogs/' + ${blog.id} + '/'}" th:text="${blog.id}"></a>
                 </li>
             </ul>
         </section>

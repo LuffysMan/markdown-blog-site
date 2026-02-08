@@ -4,6 +4,7 @@ import com.cuiyue.media.exception.BlogMetaDataParseException;
 import com.cuiyue.media.pojo.BlogMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.nio.file.Path;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 
+@Component
 public class BlogMetaDataParser {
     private static final Logger log = LoggerFactory.getLogger(BlogMetaDataParser.class);
 

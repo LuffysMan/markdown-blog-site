@@ -35,7 +35,7 @@ public class BlogController {
         return "blogs";
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/")
     public String showBlog(@PathVariable String id, Model model) {
         List<MenuObj> menuItems = indexService.getMenuItems();
 
