@@ -7,7 +7,7 @@
 # CONSTANTS
 INSTALL_DIR="/opt/xiaocui/blogs"
 BLOG_DIR="${INSTALL_DIR}"/data
-LOG_DIR="${INSTALL_DIR}"/log
+LOG_DIR="${INSTALL_DIR}"/logs
 BIN_DIR="${INSTALL_DIR}"/bin
 
 function start_service() {
