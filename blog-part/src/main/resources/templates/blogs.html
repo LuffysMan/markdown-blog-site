@@ -22,6 +22,12 @@
         <aside class="blog-sidebar">
             <h2>所有文章</h2>
             <ul>
+                <li>
+                    <form method="post" enctype="multipart/form-data" th:action="@{/blogs/upload}">
+                        <input type="file" name="file" required />
+                        <button type="submit">上传文件</button>
+                    </form>
+                </li>
                 <li th:each="blog : ${allBlogs}">
                     <span>
                         <time th:datetime="${blog.date}" th:text="${blog.date}"/>
