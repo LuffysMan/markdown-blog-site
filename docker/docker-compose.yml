@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   blog-backend:
-    build: .
+    build: ..
     restart: unless-stopped
     networks:
       - blog-net

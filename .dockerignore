@@ -5,4 +5,4 @@ generated-test-sources/
 maven-archiver/
 maven-status/
 test-classes/
-blog-part-1.0-SNAPSHOT.jar.original
+*-SNAPSHOT.jar.original

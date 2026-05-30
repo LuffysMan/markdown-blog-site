@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21-jre-jammy
 
 # 拷贝安装资源
-COPY bin /tmp/work/bin
+COPY scripts /tmp/work/bin
 COPY target /tmp/work/target
 
 # 执行安装动作

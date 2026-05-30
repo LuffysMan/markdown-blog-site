@@ -11,9 +11,9 @@ if [ -z "${VERSION}" ]; then
     VERSION="v0.0.1"
 fi
 PROJECT_PATH="D:/playground/java/LandofC"
-CODE_PATH="${PROJECT_PATH}/code/backend/blog-part"
+CODE_PATH="${PROJECT_PATH}/code/backend"
 BUILD_DIR="${PROJECT_PATH}/build_dir"
-BUILD_PATH="${PROJECT_PATH}/build_dir/blog-part"
+BUILD_PATH="${PROJECT_PATH}/build_dir/backend"
 DEPLOY_PATH="${PROJECT_PATH}/xiaocui"
 IMAGE_BUILD_PATH="${BUILD_DIR}"/app.tar
 IMAGE_DEPLOY_PATH="${DEPLOY_PATH}"/app.tar

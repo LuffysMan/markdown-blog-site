@@ -12,9 +12,9 @@ if (-not $env:VERSION) {
     $VERSION = $env:VERSION
 }
 $PROJECT_PATH = "D:\playground\java\LandofC"
-$CODE_PATH = Join-Path $PROJECT_PATH "code\backend\blog-part"
+$CODE_PATH = Join-Path $PROJECT_PATH "code\backend"
 $BUILD_DIR = Join-Path $PROJECT_PATH "build_dir"
-$BUILD_PATH = Join-Path $PROJECT_PATH "build_dir\blog-part"
+$BUILD_PATH = Join-Path $PROJECT_PATH "build_dir\backend"
 $DEPLOY_PATH = Join-Path $PROJECT_PATH "xiaocui"
 $IMAGE_BUILD_PATH = Join-Path "${BUILD_DIR}" app.tar
 $IMAGE_DEPLOY_PATH = Join-Path "${DEPLOY_PATH}" app.tar

@@ -1,5 +1,5 @@
 .idea/
 target/
 logs/
-nginx/ssl/
+docker/nginx/certs/ssl/
 *.key
