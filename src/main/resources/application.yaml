@@ -1,6 +1,15 @@
 server:
   forward-headers-strategy: framework
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
 spring:
   thymeleaf:
     cache: false

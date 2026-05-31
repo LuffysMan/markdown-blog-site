@@ -1,17 +1,32 @@
+# ===== Stage 1: Build =====
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+WORKDIR /build
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+COPY src ./src
+RUN mvn clean package -DskipTests -B
+
+# ===== Stage 2: Extract layers =====
+FROM eclipse-temurin:21-jre-jammy AS extractor
+WORKDIR /extract
+COPY --from=builder /build/target/*.jar app.jar
+RUN java -Djarmode=layertools -jar app.jar extract
+
+# ===== Stage 3: Runtime =====
 FROM eclipse-temurin:21-jre-jammy
+RUN groupadd -g 60000 xiaocui && \
+    useradd -s /usr/sbin/nologin -m -u 60001 blog -g xiaocui
 
-# 拷贝安装资源
-COPY scripts /tmp/work/bin
-COPY target /tmp/work/target
+WORKDIR /opt/xiaocui/blogs
+RUN mkdir -p data logs && chown -R blog:xiaocui /opt/xiaocui/blogs
+COPY --from=extractor /extract/dependencies/ ./
+COPY --from=extractor /extract/spring-boot-loader/ ./
+COPY --from=extractor /extract/snapshot-dependencies/ ./
+COPY --from=extractor /extract/application/ ./
 
-# 执行安装动作
-RUN /tmp/work/bin/install.sh && rm -rf /tmp/work
-
-# 指定后续命令的用户和用户组
-USER tomcat:xiaocui
-
-# 暴露端口
+USER blog:xiaocui
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# 启动应用
-ENTRYPOINT ["bash", "/opt/xiaocui/blogs/bin/start.sh"]
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

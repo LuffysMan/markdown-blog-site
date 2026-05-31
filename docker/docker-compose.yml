@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   blog-backend:
-    build: ..
+    image: ${IMAGE_REGISTRY:-crpi-mknd11v8ns0aphs9.cn-hangzhou.personal.cr.aliyuncs.com}/${IMAGE_NAMESPACE:-luffyspace}/blogs:${IMAGE_TAG:-latest}
     restart: unless-stopped
     networks:
       - blog-net
@@ -10,11 +10,11 @@ services:
       - BLOG_BASE_DIR=/opt/xiaocui/blogs/data
       - LOG_FILE_PATH=/opt/xiaocui/blogs/logs/app.log
     volumes:
-      - /opt/xiaocui/blogs/data:/opt/xiaocui/blogs/data
-      - /opt/xiaocui/blogs/logs:/opt/xiaocui/blogs/logs
+      - ${DATA_VOLUME:-/opt/xiaocui/blogs/data}:/opt/xiaocui/blogs/data
+      - ${LOGS_VOLUME:-/opt/xiaocui/blogs/logs}:/opt/xiaocui/blogs/logs
 
   nginx:
-    build: ./nginx
+    image: nginx:alpine
     restart: unless-stopped
     ports:
       - "80:80"
@@ -22,7 +22,8 @@ services:
     networks:
       - blog-net
     volumes:
-      - /opt/xiaocui/blogs/security/nginx_cert:/etc/nginx/ssl
+      - ${NGINX_CONF:-./nginx/nginx.conf}:/etc/nginx/nginx.conf:ro
+      - ${SSL_CERT_DIR:-/opt/xiaocui/blogs/security/nginx_cert}:/etc/nginx/ssl:ro
     depends_on:
       - blog-backend
 

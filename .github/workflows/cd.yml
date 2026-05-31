@@ -1,0 +1,33 @@
+name: CD - Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag (leave empty for latest)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: crpi-mknd11v8ns0aphs9.cn-hangzhou.personal.cr.aliyuncs.com
+  NAMESPACE: luffyspace
+  IMAGE_NAME: blogs
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            export IMAGE_TAG=${{ github.event.inputs.image_tag || 'latest' }}
+            export IMAGE_REGISTRY=${{ env.REGISTRY }}
+            export IMAGE_NAMESPACE=${{ env.NAMESPACE }}
+            export IMAGE_NAME=${{ env.IMAGE_NAME }}
+            bash /opt/xiaocui/blogs/deploy.sh

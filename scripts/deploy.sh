@@ -1,125 +1,95 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-#################################################################################
-# 持续集成&部署: (集成环境要求:  能拉源码; 有maven, 能通maven中心仓; 有 docker, 能通 docker hub; 能远程部署环境, 推送文件, 执行脚本)
-# 执行方式: bash continue_integrate_and_deploy.sh
-#################################################################################
+IMAGE_TAG="${IMAGE_TAG:-latest}"
+IMAGE_REGISTRY="${IMAGE_REGISTRY:-crpi-mknd11v8ns0aphs9.cn-hangzhou.personal.cr.aliyuncs.com}"
+IMAGE_NAMESPACE="${IMAGE_NAMESPACE:-luffyspace}"
+IMAGE_NAME="${IMAGE_NAME:-blogs}"
+FULL_IMAGE="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+COMPOSE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+COMPOSE_FILE="${COMPOSE_DIR}/docker/docker-compose.yml"
+PREV_TAG_FILE="${COMPOSE_DIR}/.previous_tag"
+HEALTH_URL="http://localhost:8080/actuator/health"
+MAX_RETRIES=12
+RETRY_INTERVAL=5
 
-# CONSTANTS
-if [ -z "${VERSION}" ]; then
-    # 如果外部环境变量没有定义版本好, 则默认版本号是0.1
-    VERSION="v0.0.1"
-fi
-PROJECT_PATH="D:/playground/java/LandofC"
-CODE_PATH="${PROJECT_PATH}/code/backend"
-BUILD_DIR="${PROJECT_PATH}/build_dir"
-BUILD_PATH="${PROJECT_PATH}/build_dir/backend"
-DEPLOY_PATH="${PROJECT_PATH}/xiaocui"
-IMAGE_BUILD_PATH="${BUILD_DIR}"/app.tar
-IMAGE_DEPLOY_PATH="${DEPLOY_PATH}"/app.tar
+log_info()  { echo "[INFO] $(date '+%H:%M:%S') $*"; }
+log_error() { echo "[ERROR] $(date '+%H:%M:%S') $*"; }
 
-## 运行配置
-INSTALL_DIR="/opt/xiaocui/blogs"
-DATA_DIR="${INSTALL_DIR}"/data
-LOG_DIR="${INSTALL_DIR}"/logs
-
-## 外部卷映射路径
-VOLUME_PATH_DATA="${DEPLOY_PATH}"/blogs/data
-VOLUME_PATH_LOGS="${DEPLOY_PATH}"/blogs/logs
-
-
-alias log_info="echo [INFO]: "
-alias log_error="echo [ERROR]: "
-
-function clear_env() {
-    rm -rf "${BUILD_PATH:?}"
-    echo "清理残留"
+get_current_tag() {
+    docker inspect --format='{{.Config.Image}}' blogs-blog-backend-1 2>/dev/null | awk -F: '{print $NF}' || echo "unknown"
 }
 
-function prepare_folders() {
-    log_info "prepare basic folders"
-    mkdir -p BUILD_DIR
-    mkdir -p DEPLOY_PATH
-    log_info "finish prepare basic folders"
-}
-
-function get_source_code() {
-    log_info "get_source_code start"
-    rm -rf "${BUILD_PATH:?}"
-    cp -r "${CODE_PATH}" "${BUILD_PATH}"
-    log_info "get_source_code finish"
-}
-
-function build_app() {
-    log_info "build_app start"
-    pushd "${BUILD_PATH}" || exit 1
-    if ! mvn clean package; then
-        log_error "build app failed"
+pull_image() {
+    log_info "Pulling ${FULL_IMAGE}..."
+    if ! docker pull "${FULL_IMAGE}"; then
+        log_error "Failed to pull image"
         exit 1
     fi
-    popd || exit 1
-    log_info "build_app finish"
+    docker tag "${FULL_IMAGE}" "${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:stable"
 }
 
-function build_image() {
-    log_info "build image start"
-    pushd "${BUILD_PATH}" || exit 1
-    if ! DOCKER_BUILDKIT=0 docker build --no-cache -t xiaocui/blogs:"${VERSION}" .; then
-        log_error "build image failed"
+healthcheck() {
+    log_info "Waiting for container to become healthy..."
+    for i in $(seq 1 "${MAX_RETRIES}"); do
+        if curl -sf "${HEALTH_URL}" > /dev/null 2>&1; then
+            log_info "Health check passed (attempt ${i})"
+            return 0
+        fi
+        log_info "Health check attempt ${i}/${MAX_RETRIES} failed, retrying in ${RETRY_INTERVAL}s..."
+        sleep "${RETRY_INTERVAL}"
+    done
+    log_error "Health check failed after ${MAX_RETRIES} attempts"
+    return 1
+}
+
+deploy() {
+    log_info "Starting new container with tag ${IMAGE_TAG}..."
+    cd "${COMPOSE_DIR}/docker"
+    IMAGE_TAG="${IMAGE_TAG}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-backend
+}
+
+rollback() {
+    local prev_tag
+    prev_tag=$(cat "${PREV_TAG_FILE}" 2>/dev/null || echo "")
+    if [ -z "${prev_tag}" ] || [ "${prev_tag}" = "unknown" ]; then
+        log_error "No previous version to rollback to"
         exit 1
     fi
-    popd || exit 1
-    log_info "build image finish"
+    log_error "Rolling back to ${prev_tag}..."
+    cd "${COMPOSE_DIR}/docker"
+    IMAGE_TAG="${prev_tag}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" dock er compose up -d blog-backend
 
-    log_info "start to save image to ${BUILD_DIR}"
-    docker save -o "${IMAGE_BUILD_PATH}" xiaocui/blogs:"${VERSION}"
-    log_info "finish saving image to ${BUILD_DIR}"
-}
-
-function push_image() {
-    log_info "load image start"
-    cp "${IMAGE_BUILD_PATH}" "${DEPLOY_PATH}"
-    log_info "push_image finish"
-}
-
-function load_image() {
-    log_info "load image start"
-    docker image prune -f
-    docker load -i "${IMAGE_DEPLOY_PATH}"
-    log_info "load image finish"
-}
-
-function run() {
-    log_info "run container start"
-    if ! docker run -d -p 80:8080 -v "${VOLUME_PATH_DATA}":"${DATA_DIR}" -v "${VOLUME_PATH_LOGS}":"${LOG_DIR}" xiaocui/blogs:"${VERSION}"; then
-        log_error "run container failed"
+    log_info "Verifying rollback..."
+    if healthcheck; then
+        log_info "Rollback successful"
+    else
+        log_error "CRITICAL: Rollback also failed, manual intervention required"
         exit 1
     fi
-    log_info "run container finish"
 }
 
-function main() {
-    # 准备目录
-    prepare_folders
-
-    # 下载源码
-    get_source_code
-
-    # 构建源码
-    build_app
-
-    # 构建镜像
-    build_image
-
-    # 推送镜像
-    push_image
-
-    # 加载镜像
-    load_image
-
-    # 启动容器实例
-    run
+cleanup() {
+    log_info "Cleaning up old images..."
+    docker image prune -af --filter "until=72h" 2>/dev/null || true
 }
 
-trap clear_env EXIT
+main() {
+    local current_tag
+    current_tag=$(get_current_tag)
+    echo "${current_tag}" > "${PREV_TAG_FILE}"
+    log_info "Current: ${current_tag}, deploying: ${IMAGE_TAG}"
+
+    pull_image
+    deploy
+
+    if healthcheck; then
+        log_info "Deploy SUCCESS: ${IMAGE_TAG}"
+        cleanup
+    else
+        log_error "Deploy FAILED, starting rollback..."
+        rollback
+    fi
+}
+
 main
