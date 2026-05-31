@@ -58,7 +58,7 @@ rollback() {
     fi
     log_error "Rolling back to ${prev_tag}..."
     cd "${COMPOSE_DIR}/docker"
-    IMAGE_TAG="${prev_tag}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" dock er compose up -d blog-backend
+    IMAGE_TAG="${prev_tag}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-backend
 
     log_info "Verifying rollback..."
     if healthcheck; then
