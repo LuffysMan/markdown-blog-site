@@ -30,4 +30,4 @@ jobs:
             export IMAGE_REGISTRY=${{ env.REGISTRY }}
             export IMAGE_NAMESPACE=${{ env.NAMESPACE }}
             export IMAGE_NAME=${{ env.IMAGE_NAME }}
-            bash /opt/xiaocui/blogs/deploy.sh
+            bash /opt/xiaocui/blogs/scripts/deploy.sh
