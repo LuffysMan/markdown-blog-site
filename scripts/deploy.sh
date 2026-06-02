@@ -17,7 +17,7 @@ log_info()  { echo "[INFO] $(date '+%H:%M:%S') $*"; }
 log_error() { echo "[ERROR] $(date '+%H:%M:%S') $*"; }
 
 get_current_tag() {
-    docker inspect --format='{{.Config.Image}}' blogs-blog-backend-1 2>/dev/null | awk -F: '{print $NF}' || echo "unknown"
+    docker inspect --format='{{.Config.Image}}' blogs-blog-server-1 2>/dev/null | awk -F: '{print $NF}' || echo "unknown"
 }
 
 pull_image() {
@@ -46,7 +46,7 @@ healthcheck() {
 deploy() {
     log_info "Starting new container with tag ${IMAGE_TAG}..."
     cd "${COMPOSE_DIR}/docker"
-    IMAGE_TAG="${IMAGE_TAG}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-backend
+    IMAGE_TAG="${IMAGE_TAG}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-server
 }
 
 rollback() {
@@ -58,7 +58,7 @@ rollback() {
     fi
     log_error "Rolling back to ${prev_tag}..."
     cd "${COMPOSE_DIR}/docker"
-    IMAGE_TAG="${prev_tag}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-backend
+    IMAGE_TAG="${prev_tag}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-server
 
     log_info "Verifying rollback..."
     if healthcheck; then
