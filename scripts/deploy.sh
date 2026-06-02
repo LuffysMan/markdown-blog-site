@@ -9,7 +9,6 @@ FULL_IMAGE="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
 COMPOSE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 COMPOSE_FILE="${COMPOSE_DIR}/docker/docker-compose.yml"
 PREV_TAG_FILE="${COMPOSE_DIR}/docker/.previous_tag"
-HEALTH_URL="http://localhost:8080/actuator/health"
 MAX_RETRIES=12
 RETRY_INTERVAL=5
 
@@ -17,7 +16,13 @@ log_info()  { echo "[INFO] $(date '+%H:%M:%S') $*"; }
 log_error() { echo "[ERROR] $(date '+%H:%M:%S') $*"; }
 
 get_current_tag() {
-    docker inspect --format='{{.Config.Image}}' blogs-blog-server-1 2>/dev/null | awk -F: '{print $NF}' || echo "unknown"
+    local container_id
+    container_id=$(docker compose -f "$COMPOSE_FILE" ps -q blog-server 2>/dev/null || true)
+    if [ -n "$container_id" ]; then
+        docker inspect --format='{{.Config.Image}}' "$container_id" 2>/dev/null | awk -F: '{print $NF}'
+    else
+        echo "unknown"
+    fi
 }
 
 pull_image() {
@@ -31,10 +36,15 @@ pull_image() {
 
 healthcheck() {
     log_info "Waiting for container to become healthy..."
+    local container_id health
     for i in $(seq 1 "${MAX_RETRIES}"); do
-        if curl -sf "${HEALTH_URL}" > /dev/null 2>&1; then
-            log_info "Health check passed (attempt ${i})"
-            return 0
+        container_id=$(docker compose -f "$COMPOSE_FILE" ps -q blog-server 2>/dev/null || true)
+        if [ -n "$container_id" ]; then
+            health=$(docker inspect --format='{{.State.Health.Status}}' "$container_id" 2>/dev/null || echo "unknown")
+            if [ "$health" = "healthy" ]; then
+                log_info "Health check passed (attempt ${i})"
+                return 0
+            fi
         fi
         log_info "Health check attempt ${i}/${MAX_RETRIES} failed, retrying in ${RETRY_INTERVAL}s..."
         sleep "${RETRY_INTERVAL}"
