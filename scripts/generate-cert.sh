@@ -12,6 +12,9 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# 证书输出目录
+CERTS_DIR="certs"
+
 # 证书配置变量
 DAYS=18250  # 50年 ≈ 18250天
 KEY_BITS=2048
@@ -19,22 +22,22 @@ HASH_ALGO="sha256"
 
 # 证书主题信息
 CA_COUNTRY="CN"
-CA_STATE="Beijing"
-CA_CITY="Beijing"
+CA_STATE="Sichuan"
+CA_CITY="Sichuan"
 CA_ORG="Self-Signed CA"
 CA_OU="IT Department"
 CA_CN="Self-Signed Root CA"
 
 SERVER_COUNTRY="CN"
-SERVER_STATE="Beijing"
-SERVER_CITY="Beijing"
-SERVER_ORG="Example Inc"
-SERVER_OU="Web Security"
+SERVER_STATE="Sichuan"
+SERVER_CITY="Sichuan"
+SERVER_ORG="Weave Inc"
+SERVER_OU="Blog"
 SERVER_CN="localhost"
 
 # 可选：添加SAN（Subject Alternative Name）支持
-SAN_DNS="DNS:localhost,DNS:*.example.com,DNS:example.com"
-SAN_IP="IP:127.0.0.1,IP:::1"
+SAN_DNS="DNS.1 = weave.com"
+SAN_IP="IP.1 = 你的公网IP"
 
 # 检查openssl是否安装
 check_openssl() {
@@ -52,7 +55,7 @@ check_existing_files() {
     local existing=()
 
     for file in "${files[@]}"; do
-        if [ -f "$file" ]; then
+        if [ -f "$CERTS_DIR/$file" ]; then
             existing+=("$file")
         fi
     done
@@ -72,8 +75,8 @@ check_existing_files() {
 # 生成CA私钥
 generate_ca_key() {
     echo -e "${GREEN}[1/6] 生成CA私钥...${NC}"
-    openssl genrsa -out ca.key $KEY_BITS
-    chmod 600 ca.key
+    openssl genrsa -out "$CERTS_DIR/ca.key" $KEY_BITS
+    chmod 600 "$CERTS_DIR/ca.key"
     echo -e "${GREEN}✓ ca.key 已生成${NC}"
 }
 
@@ -82,19 +85,19 @@ generate_ca_cert() {
     echo -e "${GREEN}[2/6] 生成CA根证书...${NC}"
     openssl req -new -x509 \
         -days $DAYS \
-        -key ca.key \
-        -out ca.crt \
+        -key "$CERTS_DIR/ca.key" \
+        -out "$CERTS_DIR/ca.crt" \
         -$HASH_ALGO \
         -subj "/C=$CA_COUNTRY/ST=$CA_STATE/L=$CA_CITY/O=$CA_ORG/OU=$CA_OU/CN=$CA_CN"
-    chmod 644 ca.crt
+    chmod 644 "$CERTS_DIR/ca.crt"
     echo -e "${GREEN}✓ ca.crt 已生成${NC}"
 }
 
 # 生成Nginx服务器私钥
 generate_nginx_key() {
     echo -e "${GREEN}[3/6] 生成Nginx服务器私钥...${NC}"
-    openssl genrsa -out nginx.key $KEY_BITS
-    chmod 600 nginx.key
+    openssl genrsa -out "$CERTS_DIR/nginx.key" $KEY_BITS
+    chmod 600 "$CERTS_DIR/nginx.key"
     echo -e "${GREEN}✓ nginx.key 已生成${NC}"
 }
 
@@ -103,7 +106,7 @@ generate_csr() {
     echo -e "${GREEN}[4/6] 生成证书签名请求(CSR)...${NC}"
 
     # 创建openssl配置文件以支持SAN
-    cat > nginx_san.cnf << EOF
+    cat > "$CERTS_DIR/nginx_san.cnf" << EOF
 [req]
 default_bits = $KEY_BITS
 prompt = no
@@ -128,10 +131,10 @@ $SAN_IP
 EOF
 
     openssl req -new \
-        -key nginx.key \
-        -out nginx.csr \
+        -key "$CERTS_DIR/nginx.key" \
+        -out "$CERTS_DIR/nginx.csr" \
         -$HASH_ALGO \
-        -config nginx_san.cnf
+        -config "$CERTS_DIR/nginx_san.cnf"
 
     echo -e "${GREEN}✓ nginx.csr 已生成${NC}"
 }
@@ -141,14 +144,14 @@ sign_certificate() {
     echo -e "${GREEN}[5/6] 使用CA签发Nginx证书...${NC}"
 
     # 创建CA配置文件用于签发
-    cat > ca_signing.cnf << EOF
+    cat > "$CERTS_DIR/ca_signing.cnf" << EOF
 [ca]
 default_ca = CA_default
 
 [CA_default]
-database = index.txt
-serial = serial.txt
-new_certs_dir = .
+database = $CERTS_DIR/index.txt
+serial = $CERTS_DIR/serial.txt
+new_certs_dir = $CERTS_DIR
 default_md = $HASH_ALGO
 policy = policy_loose
 
@@ -177,28 +180,31 @@ $SAN_IP
 EOF
 
     # 创建必要的文件
-    touch index.txt
-    echo 01 > serial.txt
+    touch "$CERTS_DIR/index.txt"
+    echo 01 > "$CERTS_DIR/serial.txt"
 
     openssl x509 -req \
-        -in nginx.csr \
-        -CA ca.crt \
-        -CAkey ca.key \
+        -in "$CERTS_DIR/nginx.csr" \
+        -CA "$CERTS_DIR/ca.crt" \
+        -CAkey "$CERTS_DIR/ca.key" \
         -CAcreateserial \
-        -out nginx.crt \
+        -out "$CERTS_DIR/nginx.crt" \
         -days $DAYS \
         -$HASH_ALGO \
-        -extfile ca_signing.cnf \
+        -extfile "$CERTS_DIR/ca_signing.cnf" \
         -extensions v3_ca
 
-    chmod 644 nginx.crt
+    chmod 644 "$CERTS_DIR/nginx.crt"
     echo -e "${GREEN}✓ nginx.crt 已生成${NC}"
 }
 
 # 清理临时文件
 cleanup() {
     echo -e "${GREEN}[6/6] 清理临时文件...${NC}"
-    rm -f nginx.csr nginx_san.cnf ca_signing.cnf index.txt serial.txt serial.txt.old index.txt.old
+    rm -f "$CERTS_DIR/nginx.csr" "$CERTS_DIR/nginx_san.cnf" "$CERTS_DIR/ca_signing.cnf" \
+          "$CERTS_DIR/index.txt" "$CERTS_DIR/serial.txt" \
+          "$CERTS_DIR/serial.txt.old" "$CERTS_DIR/index.txt.old" \
+          "$CERTS_DIR/ca.srl"
     echo -e "${GREEN}✓ 临时文件已清理${NC}"
 }
 
@@ -208,10 +214,10 @@ display_info() {
     echo -e "${GREEN}========================================${NC}"
     echo -e "${GREEN}证书生成成功！${NC}"
     echo -e "${GREEN}========================================${NC}"
-    echo -e "CA证书: ${YELLOW}ca.crt${NC} (根证书)"
-    echo -e "CA私钥: ${YELLOW}ca.key${NC} (请妥善保管)"
-    echo -e "服务器证书: ${YELLOW}nginx.crt${NC}"
-    echo -e "服务器私钥: ${YELLOW}nginx.key${NC}"
+    echo -e "CA证书: ${YELLOW}$CERTS_DIR/ca.crt${NC} (根证书)"
+    echo -e "CA私钥: ${YELLOW}$CERTS_DIR/ca.key${NC} (请妥善保管)"
+    echo -e "服务器证书: ${YELLOW}$CERTS_DIR/nginx.crt${NC}"
+    echo -e "服务器私钥: ${YELLOW}$CERTS_DIR/nginx.key${NC}"
     echo
     echo -e "${GREEN}证书有效期: 50年 (${DAYS}天)${NC}"
     echo
@@ -239,10 +245,10 @@ EOF
     echo
     echo -e "${YELLOW}验证证书信息:${NC}"
     echo "CA证书信息:"
-    openssl x509 -in ca.crt -noout -subject -dates
+    openssl x509 -in "$CERTS_DIR/ca.crt" -noout -subject -dates
     echo
     echo "服务器证书信息:"
-    openssl x509 -in nginx.crt -noout -subject -dates
+    openssl x509 -in "$CERTS_DIR/nginx.crt" -noout -subject -dates
     echo
     echo -e "${GREEN}========================================${NC}"
 }
@@ -251,6 +257,8 @@ EOF
 main() {
     echo -e "${GREEN}=== Nginx自签名证书生成工具 ===${NC}"
     echo
+
+    mkdir -p "$CERTS_DIR"
 
     check_openssl
     check_existing_files
