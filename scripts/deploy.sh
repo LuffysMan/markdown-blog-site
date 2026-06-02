@@ -56,7 +56,7 @@ healthcheck() {
 deploy() {
     log_info "Starting new container with tag ${IMAGE_TAG}..."
     cd "${COMPOSE_DIR}/docker"
-    IMAGE_TAG="${IMAGE_TAG}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-server
+    IMAGE_TAG="${IMAGE_TAG}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d
 }
 
 rollback() {
@@ -68,7 +68,7 @@ rollback() {
     fi
     log_error "Rolling back to ${prev_tag}..."
     cd "${COMPOSE_DIR}/docker"
-    IMAGE_TAG="${prev_tag}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d blog-server
+    IMAGE_TAG="${prev_tag}" IMAGE_REGISTRY="${IMAGE_REGISTRY}" IMAGE_NAMESPACE="${IMAGE_NAMESPACE}" docker compose up -d
 
     log_info "Verifying rollback..."
     if healthcheck; then
