@@ -22,8 +22,8 @@ services:
     networks:
       - blog-net
     volumes:
-      - ${NGINX_CONF:-./nginx/nginx.conf}:/etc/nginx/nginx.conf:ro
-      - ${SSL_CERT_DIR:-/opt/xiaocui/blogs/security/nginx_cert}:/etc/nginx/ssl:ro
+      - ${NGINX_CONF:-/opt/xiaocui/nginx/conf/nginx.conf}:/etc/nginx/nginx.conf:ro
+      - ${SSL_CERT_DIR:-/opt/xiaocui/nginx/certs}:/etc/nginx/ssl:ro
     depends_on:
       - blog-backend
 
