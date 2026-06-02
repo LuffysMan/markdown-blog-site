@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   blog-server:
     image: ${IMAGE_REGISTRY:-crpi-mknd11v8ns0aphs9.cn-hangzhou.personal.cr.aliyuncs.com}/${IMAGE_NAMESPACE:-luffyspace}/blogs:${IMAGE_TAG:-latest}
