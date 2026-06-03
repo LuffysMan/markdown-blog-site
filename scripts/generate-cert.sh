@@ -33,7 +33,7 @@ SERVER_STATE="Sichuan"
 SERVER_CITY="Sichuan"
 SERVER_ORG="Weave Inc"
 SERVER_OU="Blog"
-SERVER_CN="localhost"
+SERVER_CN="weave.com"
 
 # 可选：添加SAN（Subject Alternative Name）支持
 SAN_DNS="DNS.1 = weave.com"
