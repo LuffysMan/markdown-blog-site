@@ -3,7 +3,8 @@ set -euo pipefail
 
 ###############################################################################
 # 宿主机初始化脚本 — 以 root 执行，只需执行一次
-# 用途: 创建项目用户/组、目录结构、权限，配置 cicd 用户的 SSH 密钥
+# 用途: 创建项目用户/组、目录结构、权限，配置 cicd 用户的 SSH 密钥，
+#       加固 SSH 配置，安装 fail2ban 防爆破
 #
 # 服务器目录结构:
 #   /opt/xiaocui/
@@ -26,6 +27,7 @@ PROJECT_DIR="/opt/xiaocui"
 GID_XIAOCUI=60000
 UID_BLOG=60001
 UID_CICD=60002
+UID_MANAGER=60003
 
 log_info()  { echo "[INFO]  $*"; }
 log_error() { echo "[ERROR] $*"; exit 1; }
@@ -53,6 +55,13 @@ create_users() {
         log_info "  User cicd (UID ${UID_CICD}) created"
     else
         log_info "  User cicd already exists, skip"
+    fi
+
+    if ! id -u manager > /dev/null 2>&1; then
+        useradd -m -s /bin/bash -u ${UID_MANAGER} -g xiaocui -G wheel manager
+        log_info "  User manager (UID ${UID_MANAGER}) created (wheel: sudo)"
+    else
+        log_info "  User manager already exists, skip"
     fi
 
     if getent group docker > /dev/null 2>&1; then
@@ -164,7 +173,41 @@ setup_ssh() {
     log_info "  authorized_keys configured — store the PRIVATE key in GitHub Secrets"
 }
 
-# --------------- 5. 锁定 cicd SSH 权限 ---------------
+# --------------- 5. 配置 manager SSH 密钥 ---------------
+setup_manager_ssh() {
+    log_info "Configuring SSH for manager..."
+
+    local SSH_DIR="/home/manager/.ssh"
+    local AUTH_KEY="${SSH_DIR}/authorized_keys"
+
+    mkdir -p "${SSH_DIR}"
+    chown manager:xiaocui "${SSH_DIR}"
+    chmod 700 "${SSH_DIR}"
+
+    if [ -f "${AUTH_KEY}" ]; then
+        log_info "  manager authorized_keys already exists, skip"
+        return
+    fi
+
+    echo "##################################################################"
+    echo "  A manager SSH key is needed (your local PC)."
+    echo "  Generate one locally:"
+    echo ""
+    echo "    ssh-keygen -t ed25519 -C \"manager-key\" -f ~/.ssh/manager_key"
+    echo ""
+    echo "  Then paste the PUBLIC key content (manager_key.pub) here:"
+    echo "##################################################################"
+    read -rp "  > " PUBKEY
+    if [ -z "${PUBKEY}" ]; then
+        log_error "No public key provided, abort"
+    fi
+    echo "${PUBKEY}" > "${AUTH_KEY}"
+    chown manager:xiaocui "${AUTH_KEY}"
+    chmod 600 "${AUTH_KEY}"
+    log_info "  manager authorized_keys configured"
+}
+
+# --------------- 6. 锁定 cicd SSH 权限 ---------------
 lockdown_sshd() {
     log_info "Locking down cicd SSH access..."
 
@@ -179,19 +222,127 @@ lockdown_sshd() {
     log_info "  SSH restrictions applied (no PTY, no forwarding)"
 }
 
-# --------------- 6. 安全加固 ---------------
+# --------------- 7. 安全加固 ---------------
 harden() {
     log_info "Applying additional security hardening..."
 
-    # 确保 cicd 家目录权限
+    # cicd 家目录
     chmod 750 /home/cicd
     chown cicd:xiaocui /home/cicd
+    chown cicd:xiaocui /home/cicd/.ssh/authorized_keys 2>/dev/null || true
+    chmod 400 /home/cicd/.ssh/authorized_keys 2>/dev/null || true
 
-    # 禁止 cicd 用户编辑自己的 authorized_keys
-    chown root:root /home/cicd/.ssh/authorized_keys 2>/dev/null || true
-    chmod 444 /home/cicd/.ssh/authorized_keys 2>/dev/null || true
+    # manager 家目录
+    chmod 750 /home/manager
+    chown manager:xiaocui /home/manager
+    chown manager:xiaocui /home/manager/.ssh/authorized_keys 2>/dev/null || true
+    chmod 400 /home/manager/.ssh/authorized_keys 2>/dev/null || true
+
+    # manager sudo NOPASSWD
+    local SUDOERS_D="/etc/sudoers.d/90-manager"
+    if [ ! -f "${SUDOERS_D}" ]; then
+        echo "manager ALL=(ALL) NOPASSWD: ALL" > "${SUDOERS_D}"
+        chmod 440 "${SUDOERS_D}"
+        log_info "  manager sudo NOPASSWD enabled"
+    else
+        log_info "  manager sudoers already configured, skip"
+    fi
 
     log_info "  Hardening complete"
+}
+
+# --------------- 8. 加固 SSH 服务 ---------------
+harden_sshd() {
+    log_info "Hardening SSH daemon..."
+
+    local SSHD_CFG="/etc/ssh/sshd_config"
+
+    if [ ! -f "${SSHD_CFG}" ]; then
+        log_info "  ${SSHD_CFG} not found, skip"
+        return
+    fi
+
+    # 检查是否已加固，避免重复操作
+    if grep -q "^PermitRootLogin no$" "${SSHD_CFG}" && \
+       grep -q "^PasswordAuthentication no$" "${SSHD_CFG}" && \
+       grep -q "^AllowUsers cicd manager$" "${SSHD_CFG}"; then
+        log_info "  sshd already hardened, skip"
+        return
+    fi
+
+    local SSHD_BAK="${SSHD_CFG}.bak.$(date +%s)"
+    cp "${SSHD_CFG}" "${SSHD_BAK}"
+
+    _sshd_set() {
+        local key="$1" val="$2"
+        if grep -q "^#\?${key}\s" "${SSHD_CFG}"; then
+            sed -i "s/^#\?${key}\s.*/${key} ${val}/" "${SSHD_CFG}"
+        else
+            echo "${key} ${val}" >> "${SSHD_CFG}"
+        fi
+    }
+
+    _sshd_set "PermitRootLogin" "no"
+    _sshd_set "PasswordAuthentication" "no"
+    _sshd_set "PubkeyAuthentication" "yes"
+    _sshd_set "AllowUsers" "cicd manager"
+    _sshd_set "MaxAuthTries" "3"
+    _sshd_set "ClientAliveInterval" "60"
+    _sshd_set "ClientAliveCountMax" "2"
+
+    if sshd -t; then
+        systemctl reload sshd 2>/dev/null || service sshd reload 2>/dev/null || true
+        log_info "  sshd hardened and reloaded (backup: ${SSHD_BAK})"
+        log_info "  Root login: OFF | Password auth: OFF | Users: cicd manager | Max tries: 3"
+    else
+        log_error "sshd config invalid, restoring backup"
+        cp "${SSHD_BAK}" "${SSHD_CFG}"
+        exit 1
+    fi
+}
+
+# --------------- 9. 安装 fail2ban ---------------
+setup_fail2ban() {
+    log_info "Setting up fail2ban..."
+
+    if command -v fail2ban-client &> /dev/null; then
+        log_info "  fail2ban already installed"
+    else
+        if command -v dnf &> /dev/null; then
+            dnf install -y epel-release 2>/dev/null || true
+            dnf install -y fail2ban
+        elif command -v yum &> /dev/null; then
+            yum install -y epel-release 2>/dev/null || true
+            yum install -y fail2ban
+        else
+            log_info "  Could not install fail2ban (unsupported package manager), skip"
+            return
+        fi
+    fi
+
+    local JAIL_CFG="/etc/fail2ban/jail.local"
+
+    # 检查是否已配置，避免不必要的重启
+    if [ -f "${JAIL_CFG}" ]; then
+        log_info "  jail.local already exists, skip"
+        systemctl enable fail2ban 2>/dev/null || true
+        systemctl is-active --quiet fail2ban 2>/dev/null || systemctl restart fail2ban 2>/dev/null || service fail2ban restart 2>/dev/null || true
+        return
+    fi
+
+    cat > "${JAIL_CFG}" << 'EOF'
+[sshd]
+enabled = true
+port = 22
+maxretry = 3
+bantime = 3600
+findtime = 600
+EOF
+
+    systemctl enable fail2ban 2>/dev/null || true
+    systemctl restart fail2ban 2>/dev/null || service fail2ban restart 2>/dev/null || true
+
+    log_info "  fail2ban enabled (3 failures in 10min = 1h ban)"
 }
 
 # --------------- main ---------------
@@ -204,8 +355,11 @@ main() {
     create_dirs
     set_permissions
     setup_ssh
+    setup_manager_ssh
     lockdown_sshd
+    harden_sshd
     harden
+    setup_fail2ban
 
     echo ""
     log_info "Setup complete."
